@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # FastDDS Publisher service
+  publisher:
+    build: .
+    image: fastdds-bridge:latest
+    container_name: fastdds-publisher
+    hostname: publisher
+    environment:
+      - FASTDDS_DEFAULT_PROFILES_FILE=/etc/fastdds/qos_profiles.xml
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+      - DISPLAY=${DISPLAY:-}
+    volumes:
+      - ./config/qos_profiles.xml:/etc/fastdds/qos_profiles.xml:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+    devices:
+      - /dev/shm:/dev/shm
+    networks:
+      - dds-network
+    command: python3 /opt/bridges/fastdds_publisher.py --topic example_topic --interval 1.0
+    restart: unless-stopped
+
+  # FastDDS Subscriber service
+  subscriber:
+    build: .
+    image: fastdds-bridge:latest
+    container_name: fastdds-subscriber
+    hostname: subscriber
+    environment:
+      - FASTDDS_DEFAULT_PROFILES_FILE=/etc/fastdds/qos_profiles.xml
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    volumes:
+      - ./config/qos_profiles.xml:/etc/fastdds/qos_profiles.xml:ro
+    devices:
+      - /dev/shm:/dev/shm
+    networks:
+      - dds-network
+    command: python3 /opt/bridges/fastdds_subscriber.py --topic example_topic
+    depends_on:
+      - publisher
+    restart: unless-stopped
+
+  # ROS2 to FastDDS Bridge service
+  ros2-bridge:
+    build: .
+    image: fastdds-bridge:latest
+    container_name: ros2-fastdds-bridge
+    hostname: ros2-bridge
+    environment:
+      - FASTDDS_DEFAULT_PROFILES_FILE=/etc/fastdds/qos_profiles.xml
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    volumes:
+      - ./config/qos_profiles.xml:/etc/fastdds/qos_profiles.xml:ro
+    devices:
+      - /dev/shm:/dev/shm
+    networks:
+      - dds-network
+    command: python3 /opt/bridges/ros2_bridge.py
+    restart: unless-stopped
+
+  # CyberRT to FastDDS Bridge service (standalone demo mode)
+  cyber-bridge:
+    build: .
+    image: fastdds-bridge:latest
+    container_name: cyber-fastdds-bridge
+    hostname: cyber-bridge
+    environment:
+      - FASTDDS_DEFAULT_PROFILES_FILE=/etc/fastdds/qos_profiles.xml
+    volumes:
+      - ./config/qos_profiles.xml:/etc/fastdds/qos_profiles.xml:ro
+    devices:
+      - /dev/shm:/dev/shm
+    networks:
+      - dds-network
+    command: python3 /opt/bridges/cyber_bridge.py
+    restart: unless-stopped
+
+  # FastDDS Monitor service (requires X11 forwarding)
+  monitor:
+    build: .
+    image: fastdds-bridge:latest
+    container_name: fastdds-monitor
+    hostname: monitor
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - QT_X11_NO_MITSHM=1
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - ./config/qos_profiles.xml:/etc/fastdds/qos_profiles.xml:ro
+    devices:
+      - /dev/shm:/dev/shm
+    networks:
+      - dds-network
+    command: fastddsgui
+    profiles:
+      - gui  # Only start with: docker-compose --profile gui up
+
+networks:
+  dds-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# Usage:
+#   docker-compose up -d                    # Start publisher and subscriber
+#   docker-compose up ros2-bridge           # Start ROS2 bridge only
+#   docker-compose --profile gui up monitor # Start FastDDS Monitor with GUI

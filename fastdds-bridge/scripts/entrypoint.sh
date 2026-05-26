@@ -1,0 +1,36 @@
+#!/bin/bash
+set -e
+
+# Print welcome message
+echo "============================================"
+echo "  FastDDS Bridge Environment Ready"
+echo "============================================"
+echo ""
+echo "Available tools:"
+echo "  - fastddsgui          : FastDDS Monitor GUI"
+echo "  - fastddsgen          : FastDDS IDL code generator"
+echo "  - ros2                : ROS2 command line tools"
+echo "  - Python bridges      : /opt/bridges/*.py"
+echo ""
+echo "Environment variables:"
+echo "  FASTDDS_DEFAULT_PROFILES_FILE=$FASTDDS_DEFAULT_PROFILES_FILE"
+echo "  RMW_IMPLEMENTATION=$RMW_IMPLEMENTATION"
+echo ""
+echo "Quick start:"
+echo "  # Start FastDDS Monitor"
+echo "  fastddsgui"
+echo ""
+echo "  # Run ROS2 to FastDDS bridge"
+echo "  python3 /opt/bridges/ros2_bridge.py"
+echo ""
+echo "  # Run CyberRT to FastDDS bridge"
+echo "  python3 /opt/bridges/cyber_bridge.py"
+echo ""
+echo "  # Start a FastDDS publisher"
+echo "  python3 /opt/bridges/fastdds_publisher.py"
+echo ""
+echo "============================================"
+echo ""
+
+# Execute the command passed to docker run, or default to bash
+exec "$@"
