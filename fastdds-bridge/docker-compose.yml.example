@@ -1,0 +1,43 @@
+# Build the Docker image
+docker build -t fastdds-bridge:latest .
+
+# Run basic container
+docker run -it --rm fastdds-bridge:latest bash
+
+# Run with shared memory support (recommended for performance)
+docker run -it --rm --device /dev/shm fastdds-bridge:latest bash
+
+# Run FastDDS Monitor with X11 forwarding
+docker run -it --rm \
+    -e DISPLAY=$DISPLAY \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    --device /dev/shm \
+    fastdds-bridge:latest fastddsgui
+
+# Create a Docker network for DDS communication
+docker network create dds-network
+
+# Run multiple containers on the same network
+docker run -it --rm --network dds-network --name publisher fastdds-bridge:latest \
+    python3 /opt/bridges/fastdds_publisher.py
+
+# In another terminal
+docker run -it --rm --network dds-network --name subscriber fastdds-bridge:latest \
+    python3 /opt/bridges/fastdds_subscriber.py
+
+# Run ROS2 to FastDDS bridge
+docker run -it --rm --network dds-network fastdds-bridge:latest \
+    python3 /opt/bridges/ros2_bridge.py
+
+# Run CyberRT to FastDDS bridge (standalone demo mode)
+docker run -it --rm --network dds-network fastdds-bridge:latest \
+    python3 /opt/bridges/cyber_bridge.py
+
+# Use custom QoS profiles
+docker run -it --rm \
+    -v /path/to/custom/qos.xml:/etc/fastdds/qos_profiles.xml \
+    fastdds-bridge:latest bash
+
+# Export and import container
+docker save fastdds-bridge:latest | gzip > fastdds-bridge.tar.gz
+docker load < fastdds-bridge.tar.gz
